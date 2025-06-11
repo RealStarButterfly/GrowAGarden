@@ -1,99 +1,41 @@
--- === CONFIG ===
-local TAB_NAME = "Auto Buy"
-local BUTTON_TEXT_ON = "Auto Buy: ON"
-local BUTTON_TEXT_OFF = "Auto Buy: OFF"
+local TAB_NAME = "Auto Buy"  -- with space to match TAB_NAMES
 
--- === Check _G references ===
-if not (_G.SlapperSidebar and _G.SlapperContent) then
-    warn("[Slapper ButtonLoader] _G.SlapperSidebar or _G.SlapperContent missing")
-    return
-end
-
--- === State ===
-local toggled = false
-
--- === Ensure _G.SlapperTabContent table exists ===
-_G.SlapperTabContent = _G.SlapperTabContent or {}
-
--- === Create or get container ===
-local function getOrCreateContentForTab(tabName)
-    if _G.SlapperTabContent[tabName] then
-        return _G.SlapperTabContent[tabName]
-    end
-
-    local container = Instance.new("Frame")
-    container.Name = tabName .. "_Container"
+-- Get container or create it
+local container = _G.SlapperTabContent[TAB_NAME]
+if not container then
+    container = Instance.new("Frame")
+    container.Name = TAB_NAME .. "_Container"
     container.Size = UDim2.new(1, -40, 1, -60)
     container.Position = UDim2.new(0, 20, 0, 50)
     container.BackgroundTransparency = 1
-    container.Visible = false -- initially hidden, will be shown on tab click
+    container.Visible = false
     container.Parent = _G.SlapperContent
-
-    local layout = Instance.new("UIListLayout")
-    layout.Padding = UDim.new(0, 8)
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
-    layout.Parent = container
-
-    _G.SlapperTabContent[tabName] = container
-    return container
+    Instance.new("UIListLayout", container).Padding = UDim.new(0, 8)
+    _G.SlapperTabContent[TAB_NAME] = container
 end
 
--- === Create or get toggle button ===
-local container = getOrCreateContentForTab(TAB_NAME)
-
+-- Create toggle button inside container
 local toggleButton = container:FindFirstChild("AutoBuyToggle")
 if not toggleButton then
     toggleButton = Instance.new("TextButton")
     toggleButton.Name = "AutoBuyToggle"
     toggleButton.Size = UDim2.new(0, 160, 0, 36)
-    toggleButton.Position = UDim2.new(0, 0, 0, 0) -- place at top-left inside container
-    toggleButton.Text = BUTTON_TEXT_OFF
-    toggleButton.Font = Enum.Font.GothamBold
-    toggleButton.TextSize = 14
-    toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    toggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
-    toggleButton.BorderSizePixel = 0
-    toggleButton.AutoButtonColor = false
-    Instance.new("UICorner", toggleButton).CornerRadius = UDim.new(0, 8)
+    toggleButton.Text = "Auto Buy: OFF"
+    -- configure other properties...
     toggleButton.Parent = container
-
-    toggleButton.MouseButton1Click:Connect(function()
-        toggled = not toggled
-        toggleButton.Text = toggled and BUTTON_TEXT_ON or BUTTON_TEXT_OFF
-        toggleButton.BackgroundColor3 = toggled and Color3.fromRGB(40, 130, 90) or Color3.fromRGB(60, 60, 65)
-
-        if toggled then
-            print("[Auto Buy] Enabled")
-        else
-            print("[Auto Buy] Disabled")
-        end
-    end)
+    -- add click handler etc
 end
 
--- === Hook tab button to show your container ===
-local tabButton = _G.SlapperSidebar:FindFirstChild(TAB_NAME)
-if tabButton and tabButton:IsA("TextButton") then
-    -- Disconnect all previous connections to prevent double-calls
+-- Find the tab button by removing spaces from TAB_NAME
+local tabButton = _G.SlapperSidebar:FindFirstChild(TAB_NAME:gsub(" ", ""))
+if tabButton then
     tabButton.MouseButton1Click:Connect(function()
-        -- Hide all containers
+        -- hide others, show container etc
         for _, v in pairs(_G.SlapperTabContent) do
             v.Visible = false
         end
-
-        -- Hide info/settings if they exist
-        if _G.SlapperContent:FindFirstChild("InfoLabel") then
-            _G.SlapperContent.InfoLabel.Visible = false
-        end
-        if _G.SlapperContent:FindFirstChild("SettingsPanel") then
-            _G.SlapperContent.SettingsPanel.Visible = false
-        end
-
-        -- Show your tab container
         container.Visible = true
     end)
 else
-    warn("[Slapper ButtonLoader] No tab button found named '"..TAB_NAME.."' in _G.SlapperSidebar")
+    warn("Tab button '" .. TAB_NAME:gsub(" ", "") .. "' not found in sidebar")
 end
-
--- === For debug: immediately show container and button to verify ===
-container.Visible = true
