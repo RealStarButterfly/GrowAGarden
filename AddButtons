@@ -1,1 +1,134 @@
-print("HELLO")
+-- Safety check
+if not _G.SlapperSidebar then
+    warn("[Slapper AddButtons] Sidebar not found.")
+    return
+end
+
+-- === CONFIG ===
+local TAB_NAME = "AutoBuy" -- Must match the Name of the tab (not display text)
+local BUTTON_TEXT = "Auto Buy: OFF"
+local BUTTON_ON_TEXT = "Auto Buy: ON"
+local BUTTON_OFF_TEXT = "Auto Buy: OFF"
+
+-- === STATE ===
+local toggled = false
+
+-- === UTIL: Find the tab frame under the sidebar ===
+local function findTabButton(name)
+    for _, child in pairs(_G.SlapperSidebar:GetChildren()) do
+        if child:IsA("TextButton") and child.Name == name then
+            return child
+        end
+    end
+    return nil
+end
+
+-- === SMART BUTTON CONTAINER MANAGER ===
+-- Create a frame under the content area dynamically to match the tab
+if not _G.SlapperTabContent then
+    _G.SlapperTabContent = {} -- TabName -> UI Container
+end
+
+-- Create container frame inside Content for this tab if not present
+local function getOrCreateContentFrame(tabName)
+    local contentFrame = script.Parent:FindFirstChild("MainUI") and script.Parent.MainUI:FindFirstChild("BodyFrame") and script.Parent.MainUI.BodyFrame:FindFirstChild("Content")
+    if not contentFrame then
+        for _, descendant in ipairs(game:GetDescendants()) do
+            if descendant:IsA("Frame") and descendant.Name == "Content" then
+                contentFrame = descendant
+                break
+            end
+        end
+    end
+    if not contentFrame then
+        warn("[Slapper AddButtons] Content frame not found.")
+        return
+    end
+
+    -- If content container for this tab doesn't exist, create it
+    if not _G.SlapperTabContent[tabName] then
+        local tabContent = Instance.new("Frame")
+        tabContent.Name = tabName .. "Container"
+        tabContent.Size = UDim2.new(1, -40, 1, -60)
+        tabContent.Position = UDim2.new(0, 20, 0, 50)
+        tabContent.BackgroundTransparency = 1
+        tabContent.Visible = false
+        tabContent.Parent = contentFrame
+
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0, 8)
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Parent = tabContent
+
+        _G.SlapperTabContent[tabName] = tabContent
+    end
+
+    return _G.SlapperTabContent[tabName]
+end
+
+-- === SMART TAB SWITCH HANDLER OVERRIDE ===
+-- Hook into tab button to show/hide the right content
+local tabButton = findTabButton(TAB_NAME)
+if tabButton then
+    tabButton.MouseButton1Click:Connect(function()
+        -- Hide all other tab containers
+        for _, container in pairs(_G.SlapperTabContent) do
+            container.Visible = false
+        end
+
+        -- Hide settings/info panels if still showing
+        local contentFrame = tabButton:FindFirstAncestor("MainUI")
+        if contentFrame then
+            local body = contentFrame:FindFirstChild("BodyFrame")
+            if body then
+                local content = body:FindFirstChild("Content")
+                if content then
+                    local infoLabel = content:FindFirstChild("InfoLabel")
+                    local settingsPanel = content:FindFirstChild("SettingsPanel")
+                    if infoLabel then infoLabel.Visible = false end
+                    if settingsPanel then settingsPanel.Visible = false end
+                end
+            end
+        end
+
+        -- Show this tab’s container
+        local tabContainer = getOrCreateContentFrame(TAB_NAME)
+        if tabContainer then
+            tabContainer.Visible = true
+        end
+    end)
+end
+
+-- === CREATE TOGGLE BUTTON ===
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 160, 0, 36)
+button.Text = BUTTON_OFF_TEXT
+button.Font = Enum.Font.GothamBold
+button.TextSize = 14
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+button.AutoButtonColor = false
+button.BorderSizePixel = 0
+button.Name = "AutoBuyToggle"
+Instance.new("UICorner", button).CornerRadius = UDim.new(0, 8)
+
+button.MouseButton1Click:Connect(function()
+    toggled = not toggled
+    button.Text = toggled and BUTTON_ON_TEXT or BUTTON_OFF_TEXT
+    button.BackgroundColor3 = toggled and Color3.fromRGB(40, 130, 90) or Color3.fromRGB(60, 60, 65)
+
+    -- === Your toggled logic here ===
+    if toggled then
+        print("[Auto Buy] ENABLED")
+        -- Start autofarming logic here
+    else
+        print("[Auto Buy] DISABLED")
+        -- Stop autofarming logic here
+    end
+end)
+
+-- Add to the tab content container
+local container = getOrCreateContentFrame(TAB_NAME)
+if container then
+    button.Parent = container
+end
