@@ -1,1 +1,1 @@
-loadstring(game:HttpGet(('https://github.com/RealStarButterfly/GrowAGarden/blob/main/AutoPurchaseSeeds'),true))()
+loadstring(game:HttpGet(('https://raw.githubusercontent.com/RealStarButterfly/GrowAGarden/refs/heads/main/AutoPurchaseSeeds'),true))()
